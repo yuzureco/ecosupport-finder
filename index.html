@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生ごみ処理機補助金チェッカー</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+        body { font-family: 'Noto+Sans+JP', sans-serif; }
+        .loading-dots:after {
+            content: '.';
+            animation: dots 1s steps(5, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60% { content: '...'; }
+            80%, 100% { content: ''; }
+        }
+    </style>
+</head>
+<body class="bg-stone-50 min-h-screen text-stone-800">
+
+    <div class="max-w-3xl mx-auto px-4 py-12">
+        <!-- Header -->
+        <div class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-green-700 mb-2">生ごみ処理機補助金チェッカー</h1>
+            <p class="text-stone-600">お住まいの地域の最新の補助金情報をAIが調査します</p>
+        </div>
+
+        <!-- Search Form -->
+        <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-stone-700 mb-1">都道府県</label>
+                    <input type="text" id="prefecture" placeholder="例: 東京都" 
+                           class="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-stone-700 mb-1">市区町村</label>
+                    <input type="text" id="city" placeholder="例: 世田谷区" 
+                           class="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition">
+                </div>
+            </div>
+            <button id="searchBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-md flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                </svg>
+                補助金を調べる
+            </button>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="hidden text-center py-10">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-green-500 border-t-transparent mb-4"></div>
+            <p class="text-lg font-medium text-stone-600">自治体の最新情報を検索中<span class="loading-dots"></span></p>
+            <p class="text-sm text-stone-400 mt-2">※10秒〜20秒ほどかかる場合があります</p>
+        </div>
+
+        <!-- Result Section -->
+        <div id="result" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-8">
+                <div class="flex items-center gap-2 mb-4 border-b border-stone-100 pb-4">
+                    <div class="bg-green-100 p-2 rounded-full text-green-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-xl font-bold" id="resultTitle">検索結果</h2>
+                </div>
+                
+                <div id="resultContent" class="prose max-w-none text-stone-700 leading-relaxed whitespace-pre-wrap">
+                    <!-- AI response injected here -->
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-stone-100">
+                    <h3 class="text-sm font-bold text-stone-500 mb-3 uppercase tracking-wider">参考サイト</h3>
+                    <div id="sources" class="space-y-2">
+                        <!-- Sources injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Caution -->
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 text-amber-800 text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                </svg>
+                <p>情報はAIが検索した時点のものです。予算終了や制度変更の可能性があるため、詳細は必ず自治体の公式Webサイトで最終確認を行ってください。</p>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4"></div>
+    </div>
+
+    <script>
+        const apiKey = ""; // Runtime automatically provides this
+
+        const searchBtn = document.getElementById('searchBtn');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+        const resultContent = document.getElementById('resultContent');
+        const resultTitle = document.getElementById('resultTitle');
+        const sourcesDiv = document.getElementById('sources');
+        const errorMessage = document.getElementById('errorMessage');
+
+        async function fetchWithRetry(url, payload, retries = 5, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.ok) return await response.json();
+                } catch (e) {
+                    if (i === retries - 1) throw e;
+                }
+                await new Promise(res => setTimeout(res, delay));
+                delay *= 2;
+            }
+        }
+
+        searchBtn.addEventListener('click', async () => {
+            const pref = document.getElementById('prefecture').value.trim();
+            const city = document.getElementById('city').value.trim();
+
+            if (!pref || !city) {
+                showError("都道府県と市区町村の両方を入力してください。");
+                return;
+            }
+
+            // UI Reset
+            errorMessage.classList.add('hidden');
+            result.classList.add('hidden');
+            loading.classList.remove('hidden');
+            searchBtn.disabled = true;
+
+            const userQuery = `${pref}${city}の「生ごみ処理機」購入に関する補助金制度について、最新の情報を教えてください。
+特に以下の点を含めて分かりやすくまとめてください：
+1. 補助金の有無
+2. 補助額（または補助率・上限額）
+3. 対象となる機種
+4. 主な申請条件や期限
+5. 申請方法の概要`;
+
+            const systemPrompt = `あなたは自治体の補助金制度に詳しい専門アドバイザーです。
+Google検索を使用して、入力された自治体の最新の補助金情報を調査し、ユーザーに分かりやすく解説してください。
+【重要】回答には Markdown 記号（#、##、###、**、__、*、_、- など）を一切使用しないでください。
+見出しを強調したい場合は、行を分けたり「■」や「●」などの記号を先頭につけるのみにしてください。
+補助金制度が終了している場合はその旨を明確に伝えてください。`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                tools: [{ "google_search": {} }]
+            };
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const data = await fetchWithRetry(url, payload);
+
+                let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                
+                // 万が一AIが記号を含めてしまった場合のクリーニング処理
+                text = text.replace(/[#*`_~]/g, '').trim();
+
+                const groundings = data.candidates?.[0]?.groundingMetadata?.groundingAttributions || [];
+
+                if (text) {
+                    resultTitle.innerText = `${pref}${city} の補助金情報`;
+                    resultContent.innerText = text;
+                    
+                    // Render Sources
+                    sourcesDiv.innerHTML = '';
+                    if (groundings.length > 0) {
+                        groundings.forEach(source => {
+                            const link = document.createElement('a');
+                            link.href = source.web?.uri;
+                            link.target = '_blank';
+                            link.className = "block text-sm text-green-600 hover:underline flex items-center gap-1";
+                            link.innerHTML = `
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                                ${source.web?.title || source.web?.uri}
+                            `;
+                            sourcesDiv.appendChild(link);
+                        });
+                    } else {
+                        sourcesDiv.innerHTML = '<p class="text-sm text-stone-400">情報ソースが見つかりませんでした。</p>';
+                    }
+
+                    result.classList.remove('hidden');
+                } else {
+                    showError("情報を取得できませんでした。");
+                }
+            } catch (error) {
+                console.error(error);
+                showError("検索中にエラーが発生しました。");
+            } finally {
+                loading.classList.add('hidden');
+                searchBtn.disabled = false;
+            }
+        });
+
+        function showError(msg) {
+            errorMessage.innerText = msg;
+            errorMessage.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
